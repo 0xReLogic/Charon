@@ -1,0 +1,15 @@
+package main
+
+import (
+	"flag"
+	"log"
+	testutil "github.com/0xReLogic/Charon/test"
+)
+
+func main() {
+	addr := flag.String("addr", "localhost:8080", "proxy address")
+	flag.Parse()
+	if err := testutil.RunInteractiveProxyClient(*addr); err != nil {
+		log.Fatal(err)
+	}
+}

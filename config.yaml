@@ -1,0 +1,3 @@
+# Konfigurasi dasar Charon
+listen_port: "8080"
+target_service_addr: "localhost:9091"

@@ -1,0 +1,29 @@
+# Binaries
+/charon
+/charon.exe
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Build directories
+/bin/
+/build/
+/dist/
+
+# Test binaries
+*.test
+
+# Logs
+*.log
+
+# IDE settings
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local notes
+/todo.txt
