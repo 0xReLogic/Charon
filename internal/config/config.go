@@ -14,6 +14,15 @@ type Config struct {
 	RegistryFile      string `mapstructure:"registry_file"`
 	// Backward compatibility (Phase 1/2)
 	TargetServiceAddr string `mapstructure:"target_service_addr"`
+	// Advanced routing rules (optional). Evaluated in order; first match wins.
+	Routes            []RouteRule `mapstructure:"routes"`
+}
+
+// RouteRule mendefinisikan aturan routing berbasis host/path
+type RouteRule struct {
+	Host        string `mapstructure:"host"`        // optional exact host match (tanpa port)
+	PathPrefix  string `mapstructure:"path_prefix"` // optional path prefix match
+	ServiceName string `mapstructure:"service"`     // target service name di registry
 }
 
 // LoadConfig membaca konfigurasi dari file

@@ -155,8 +155,50 @@ Available metrics include:
 
 - `charon_http_requests_total{method,status,upstream}`
 - `charon_http_request_latency_seconds_bucket{method,upstream,...}` (+ sum/count)
+- `charon_http_retries_total{method}`
 
 You can configure Prometheus to scrape `http://<charon-host>:8080/metrics`.
+
+### Advanced Routing (Host/Path)
+
+Charon mendukung routing berbasis host/path melalui `routes` di `config.yaml`.
+Aturan dievaluasi dari atas ke bawah, first match wins. Jika tidak ada yang match,
+akan fallback ke `target_service_name` (jika ada) atau `target_service_addr`.
+
+Contoh konfigurasi:
+
+```yaml
+listen_port: "8080"
+
+# Default service (fallback)
+target_service_name: "http-backend"
+registry_file: "registry.yaml"
+
+# Routing rules (opsional)
+routes:
+  - host: "api.local"
+    path_prefix: "/hello"
+    service: "http-backend"     # nama service di registry.yaml
+  - path_prefix: "/admin"
+    service: "admin-backend"
+```
+
+Contoh `registry.yaml`:
+
+```yaml
+services:
+  http-backend: localhost:9091
+  admin-backend: localhost:9092
+```
+
+Uji cepat:
+
+```bash
+curl -v http://localhost:8080/hello              # -> http-backend
+curl -v http://localhost:8080/admin               # -> admin-backend
+# atau dengan Host header spesifik:
+curl -v -H "Host: api.local" http://localhost:8080/hello
+```
 
 ## Project Structure
 

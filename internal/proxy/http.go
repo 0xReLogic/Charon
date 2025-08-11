@@ -39,6 +39,13 @@ var (
 		},
 		[]string{"method", "upstream"},
 	)
+	httpRetriesTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "charon_http_retries_total",
+			Help: "Total number of HTTP request retries performed by Charon",
+		},
+		[]string{"method"},
+	)
 )
 
 // NewHTTPProxy creates a new HTTP reverse proxy. target can be a full URL or host:port.
@@ -75,6 +82,42 @@ func (r *statusRecorder) Write(b []byte) (int, error) {
 	return n, err
 }
 
+type retryTransport struct {
+	base            http.RoundTripper
+	maxRetries      int
+	idempotentOnly  bool
+	backoffFunc     func(int) time.Duration
+	onRetryCallback func(method string)
+}
+
+func (rt *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	var resp *http.Response
+	var err error
+	retries := 0
+	for {
+		resp, err = rt.base.RoundTrip(req)
+		if err == nil || retries >= rt.maxRetries || !rt.isIdempotent(req.Method) {
+			break
+		}
+		rt.onRetryCallback(req.Method)
+		retries++
+		time.Sleep(rt.backoffFunc(retries))
+	}
+	return resp, err
+}
+
+func (rt *retryTransport) isIdempotent(method string) bool {
+	if !rt.idempotentOnly {
+		return true
+	}
+	switch method {
+	case http.MethodGet, http.MethodHead, http.MethodPut, http.MethodDelete:
+		return true
+	default:
+		return false
+	}
+}
+
 // Start runs the HTTP reverse proxy server and blocks.
 func (p *HTTPProxy) Start() error {
 	// Configure transport with sane timeouts and connection pooling
@@ -90,6 +133,15 @@ func (p *HTTPProxy) Start() error {
 		MaxIdleConns:          100,
 		MaxIdleConnsPerHost:   10,
 		IdleConnTimeout:       90 * time.Second,
+	}
+
+	// Wrap with a retrying transport for idempotent methods
+	rt := &retryTransport{
+		base:            transport,
+		maxRetries:      2,
+		idempotentOnly:  true,
+		backoffFunc:     func(i int) time.Duration { return time.Duration(1<<i) * 150 * time.Millisecond },
+		onRetryCallback: func(method string) { httpRetriesTotal.WithLabelValues(method).Inc() },
 	}
 
 	// Build reverse proxy with custom Director for dynamic target selection
@@ -115,7 +167,7 @@ func (p *HTTPProxy) Start() error {
 		req.URL.Host = upstream.Host
 		// Preserve incoming path/query; set Host header to upstream host
 		req.Host = upstream.Host
-	}, Transport: transport,
+	}, Transport: rt,
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
 			up := r.URL.Host
 			if up == "" {

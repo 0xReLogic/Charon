@@ -1,5 +1,7 @@
-# Konfigurasi dasar Charon
 listen_port: "8080"
-# Phase 3: gunakan service discovery berbasis file
 target_service_name: "http-backend"
 registry_file: "registry.yaml"
+
+routes:
+  - path_prefix: "/admin"
+    service: "admin-backend"

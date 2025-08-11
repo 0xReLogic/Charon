@@ -27,22 +27,52 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	// Create HTTP reverse proxy with per-request resolver (Phase 3)
+	// Create HTTP reverse proxy with per-request resolver (Phase 3 + advanced routing)
 	resolver := func(r *http.Request) (*url.URL, error) {
-		// Prefer service discovery if configured
-		var addr string
-		if cfg.TargetServiceName != "" {
-			if cfg.RegistryFile == "" {
-				return nil, fmt.Errorf("registry_file is required when target_service_name is set")
+		// Try advanced routing rules first (host/path)
+		var serviceName string
+		if len(cfg.Routes) > 0 {
+			host := r.Host
+			if i := strings.Index(host, ":"); i >= 0 { // strip port
+				host = host[:i]
 			}
-			a, err := registry.ResolveServiceAddress(cfg.RegistryFile, cfg.TargetServiceName)
+			path := r.URL.Path
+			for _, rule := range cfg.Routes {
+				if rule.Host != "" && !strings.EqualFold(rule.Host, host) {
+					continue
+				}
+				if rule.PathPrefix != "" && !strings.HasPrefix(path, rule.PathPrefix) {
+					continue
+				}
+				serviceName = rule.ServiceName
+				break
+			}
+		}
+
+		// Fall back to global service name if no route matched
+		if serviceName == "" && cfg.TargetServiceName != "" {
+			serviceName = cfg.TargetServiceName
+		}
+
+		var addr string
+		if serviceName != "" {
+			if cfg.RegistryFile == "" {
+				return nil, fmt.Errorf("registry_file is required when service-based routing is used")
+			}
+			a, err := registry.ResolveServiceAddress(cfg.RegistryFile, serviceName)
 			if err != nil {
 				return nil, err
 			}
 			addr = a
 		} else {
+			// Fallback to static address if configured
 			addr = cfg.TargetServiceAddr
 		}
+
+		if addr == "" {
+			return nil, fmt.Errorf("no upstream target resolved")
+		}
+
 		// Ensure URL has scheme
 		if !strings.HasPrefix(addr, "http://") && !strings.HasPrefix(addr, "https://") {
 			addr = "http://" + addr
