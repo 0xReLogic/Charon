@@ -1,0 +1,12 @@
+# Normalize line endings across platforms
+* text=auto
+
+# Prefer LF in source files
+*.go text eol=lf
+*.md  text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Windows scripts can keep CRLF
+*.bat text eol=crlf
+*.ps1 text eol=crlf

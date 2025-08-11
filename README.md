@@ -141,6 +141,23 @@ go run ./test/cmd/http_backend --addr :9092
 
 Call again. The proxy will route to the new address without restart.
 
+### Observability: Prometheus Metrics
+
+Charon exposes Prometheus metrics at `/metrics` on the same listen port.
+
+Example:
+
+```bash
+curl -s http://localhost:8080/metrics | grep charon_
+```
+
+Available metrics include:
+
+- `charon_http_requests_total{method,status,upstream}`
+- `charon_http_request_latency_seconds_bucket{method,upstream,...}` (+ sum/count)
+
+You can configure Prometheus to scrape `http://<charon-host>:8080/metrics`.
+
 ## Project Structure
 
 ```

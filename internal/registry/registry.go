@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 )
 
@@ -14,11 +15,55 @@ import (
 var (
 	mu    sync.RWMutex
 	cache = map[string]*cachedRegistry{}
+	watch = map[string]*fsnotify.Watcher{}
 )
 
 type cachedRegistry struct {
 	modTime  time.Time
 	services map[string]string
+}
+
+// ensureWatcher starts a file watcher for the given registry path (idempotent).
+func ensureWatcher(registryPath string) {
+	mu.Lock()
+	if _, ok := watch[registryPath]; ok {
+		mu.Unlock()
+		return
+	}
+	w, err := fsnotify.NewWatcher()
+	if err != nil {
+		// best-effort; skip watcher if cannot create
+		mu.Unlock()
+		return
+	}
+	if err := w.Add(registryPath); err != nil {
+		// skip watcher if cannot add file (may not exist yet)
+		_ = w.Close()
+		mu.Unlock()
+		return
+	}
+	watch[registryPath] = w
+	mu.Unlock()
+
+	// Invalidate cache on any fs event; reload will occur on next Resolve
+	go func() {
+		for {
+			select {
+			case _, ok := <-w.Events:
+				if !ok {
+					return
+				}
+				mu.Lock()
+				delete(cache, registryPath)
+				mu.Unlock()
+			case _, ok := <-w.Errors:
+				if !ok {
+					return
+				}
+				// ignore errors; cache will refresh on next access
+			}
+		}
+	}()
 }
 
 func loadRegistry(registryPath string) (map[string]string, error) {
@@ -46,6 +91,9 @@ func loadRegistry(registryPath string) (map[string]string, error) {
 	mu.Lock()
 	cache[registryPath] = &cachedRegistry{modTime: fi.ModTime(), services: m}
 	mu.Unlock()
+
+	// Start a file watcher (best-effort) to invalidate cache on change
+	ensureWatcher(registryPath)
 
 	return m, nil
 }
