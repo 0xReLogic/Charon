@@ -2,13 +2,18 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/0xReLogic/Charon/internal/config"
 	"github.com/0xReLogic/Charon/internal/proxy"
+	"github.com/0xReLogic/Charon/internal/registry"
 )
 
 func main() {
@@ -22,11 +27,30 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	// Create HTTP reverse proxy (Phase 2)
-	httpProxy, err := proxy.NewHTTPProxy(":"+cfg.ListenPort, cfg.TargetServiceAddr)
-	if err != nil {
-		log.Fatalf("Failed to create HTTP proxy: %v", err)
+	// Create HTTP reverse proxy with per-request resolver (Phase 3)
+	resolver := func(r *http.Request) (*url.URL, error) {
+		// Prefer service discovery if configured
+		var addr string
+		if cfg.TargetServiceName != "" {
+			if cfg.RegistryFile == "" {
+				return nil, fmt.Errorf("registry_file is required when target_service_name is set")
+			}
+			a, err := registry.ResolveServiceAddress(cfg.RegistryFile, cfg.TargetServiceName)
+			if err != nil {
+				return nil, err
+			}
+			addr = a
+		} else {
+			addr = cfg.TargetServiceAddr
+		}
+		// Ensure URL has scheme
+		if !strings.HasPrefix(addr, "http://") && !strings.HasPrefix(addr, "https://") {
+			addr = "http://" + addr
+		}
+		return url.Parse(addr)
 	}
+
+	httpProxy := proxy.NewHTTPProxyWithResolver(":"+cfg.ListenPort, resolver)
 
 	// Handle graceful shutdown
 	sigCh := make(chan os.Signal, 1)

@@ -1,0 +1,3 @@
+# Sample service registry for Phase 3
+services:
+  http-backend: localhost:9092

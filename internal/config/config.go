@@ -9,6 +9,10 @@ import (
 // Config menyimpan konfigurasi aplikasi
 type Config struct {
 	ListenPort        string `mapstructure:"listen_port"`
+	// Phase 3: gunakan nama service dan registry
+	TargetServiceName string `mapstructure:"target_service_name"`
+	RegistryFile      string `mapstructure:"registry_file"`
+	// Backward compatibility (Phase 1/2)
 	TargetServiceAddr string `mapstructure:"target_service_addr"`
 }
 

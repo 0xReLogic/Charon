@@ -39,7 +39,11 @@ Create a `config.yaml` file:
 
 ```yaml
 listen_port: "8080"
-target_service_addr: "localhost:9091"
+# Phase 3: service discovery via file registry
+target_service_name: "http-backend"
+registry_file: "registry.yaml"
+# (Optional fallback for Phase 1/2)
+# target_service_addr: "localhost:9091"
 ```
 
 ### Running
@@ -97,6 +101,46 @@ You should see logs like:
 http request method=GET path=/ -> status=200 bytes=... latency=...
 ```
 
+### Phase 3: Service Discovery (Dynamic Routing)
+
+Use a file-based registry to dynamically resolve upstream addresses per request (no restart needed).
+
+1) Create `registry.yaml`:
+
+```yaml
+services:
+  http-backend: localhost:9091
+```
+
+2) Start backend and Charon:
+
+```bash
+# Terminal A: backend on :9091
+go run ./test/cmd/http_backend --addr :9091
+
+# Terminal B: start Charon
+./charon.exe --config config.yaml
+
+# Terminal C: call via proxy
+curl -v http://localhost:8080/hello
+```
+
+3) Change routing dynamically:
+
+```yaml
+# edit registry.yaml
+services:
+  http-backend: localhost:9092
+```
+
+Restart backend on :9092:
+
+```bash
+go run ./test/cmd/http_backend --addr :9092
+```
+
+Call again. The proxy will route to the new address without restart.
+
 ## Project Structure
 
 ```
@@ -108,6 +152,7 @@ charon/
 │   ├── proxy/           # Proxy implementation
 │   │   ├── tcp.go       # Phase 1: TCP transparent proxy
 │   │   └── http.go      # Phase 2: HTTP reverse proxy with basic metrics
+│   ├── registry/        # Phase 3: file-based service discovery
 │   └── ...
 ├── test/                # Test utilities and mock servers
 │   ├── cmd/             # Standalone test binaries (no conflict with library)
@@ -118,7 +163,8 @@ charon/
 │   ├── echo_server.go   # Library: RunEchoServer
 │   ├── smoke_client.go  # Library: RunSmokeClient
 │   └── test_proxy.go    # Library: RunInteractiveProxyClient
-├── config.yaml          # Default configuration
+├── config.yaml          # Default configuration (Phase 3 by default)
+├── registry.yaml        # Sample service registry (Phase 3)
 └── README.md            # This file
 ```
 

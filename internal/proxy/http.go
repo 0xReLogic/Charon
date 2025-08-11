@@ -13,6 +13,8 @@ import (
 type HTTPProxy struct {
 	ListenAddr string
 	TargetURL  *url.URL
+	// Resolver allows per-request upstream selection when set.
+	Resolver func(r *http.Request) (*url.URL, error)
 }
 
 // NewHTTPProxy creates a new HTTP reverse proxy. target can be a full URL or host:port.
@@ -25,6 +27,11 @@ func NewHTTPProxy(listenAddr, target string) (*HTTPProxy, error) {
 		return nil, err
 	}
 	return &HTTPProxy{ListenAddr: listenAddr, TargetURL: u}, nil
+}
+
+// NewHTTPProxyWithResolver creates a proxy that resolves the upstream per request.
+func NewHTTPProxyWithResolver(listenAddr string, resolver func(r *http.Request) (*url.URL, error)) *HTTPProxy {
+	return &HTTPProxy{ListenAddr: listenAddr, Resolver: resolver}
 }
 
 type statusRecorder struct {
@@ -46,15 +53,30 @@ func (r *statusRecorder) Write(b []byte) (int, error) {
 
 // Start runs the HTTP reverse proxy server and blocks.
 func (p *HTTPProxy) Start() error {
-	rp := httputil.NewSingleHostReverseProxy(p.TargetURL)
-
-	// Wrap the Director to preserve the incoming request path and host
-	origDirector := rp.Director
-	rp.Director = func(req *http.Request) {
-		origDirector(req)
-		// Keep original host for upstream if needed
-		req.Host = p.TargetURL.Host
-	}
+	// Build reverse proxy with custom Director for dynamic target selection
+	rp := &httputil.ReverseProxy{Director: func(req *http.Request) {
+		var upstream *url.URL
+		if p.Resolver != nil {
+			if u, err := p.Resolver(req); err == nil && u != nil {
+				upstream = u
+			}
+		}
+		if upstream == nil {
+			upstream = p.TargetURL
+		}
+		if upstream == nil {
+			// No upstream; leave request as-is (will fail), but avoid panic
+			return
+		}
+		scheme := upstream.Scheme
+		if scheme == "" {
+			scheme = "http"
+		}
+		req.URL.Scheme = scheme
+		req.URL.Host = upstream.Host
+		// Preserve incoming path/query; set Host header to upstream host
+		req.Host = upstream.Host
+	}}
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -65,6 +87,10 @@ func (p *HTTPProxy) Start() error {
 		log.Printf("http request method=%s path=%s -> status=%d bytes=%d latency=%s", r.Method, r.URL.Path, rec.status, rec.size, latency)
 	})
 
-	log.Printf("Starting HTTP reverse proxy on %s -> %s", p.ListenAddr, p.TargetURL.String())
+	upstream := "dynamic"
+	if p.TargetURL != nil {
+		upstream = p.TargetURL.String()
+	}
+	log.Printf("Starting HTTP reverse proxy on %s -> %s", p.ListenAddr, upstream)
 	return http.ListenAndServe(p.ListenAddr, handler)
 }
