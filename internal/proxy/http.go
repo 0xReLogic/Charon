@@ -84,7 +84,12 @@ func (p *HTTPProxy) Start() error {
 		rp.ServeHTTP(rec, r)
 		latency := time.Since(start)
 
-		log.Printf("http request method=%s path=%s -> status=%d bytes=%d latency=%s", r.Method, r.URL.Path, rec.status, rec.size, latency)
+		// Log resolved upstream host for observability
+		up := r.URL.Host
+		if up == "" {
+			up = "unknown"
+		}
+		log.Printf("http request method=%s path=%s upstream=%s -> status=%d bytes=%d latency=%s", r.Method, r.URL.Path, up, rec.status, rec.size, latency)
 	})
 
 	upstream := "dynamic"
