@@ -22,8 +22,11 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	// Create and start TCP proxy
-	tcpProxy := proxy.NewTCPProxy(":"+cfg.ListenPort, cfg.TargetServiceAddr)
+	// Create HTTP reverse proxy (Phase 2)
+	httpProxy, err := proxy.NewHTTPProxy(":"+cfg.ListenPort, cfg.TargetServiceAddr)
+	if err != nil {
+		log.Fatalf("Failed to create HTTP proxy: %v", err)
+	}
 
 	// Handle graceful shutdown
 	sigCh := make(chan os.Signal, 1)
@@ -31,8 +34,8 @@ func main() {
 
 	// Start proxy in a goroutine
 	go func() {
-		if err := tcpProxy.Start(); err != nil {
-			log.Fatalf("Failed to start TCP proxy: %v", err)
+		if err := httpProxy.Start(); err != nil {
+			log.Fatalf("Failed to start HTTP proxy: %v", err)
 		}
 	}()
 

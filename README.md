@@ -75,6 +75,28 @@ go run ./test/cmd/smoke_client --addr localhost:8080 --msg "hello-through-proxy\
 go run ./test/cmd/interactive_client --addr localhost:8080
 ```
 
+### Phase 2: HTTP Reverse Proxy Testing
+
+Start a simple HTTP backend, run Charon, then curl via the proxy:
+
+```bash
+# Terminal A: HTTP backend on :9091
+go run ./test/cmd/http_backend --addr :9091
+
+# Terminal B: Charon HTTP reverse proxy on :8080
+./charon.exe --config config.yaml    # or ./charon on Linux/macOS
+
+# Terminal C: Send requests through proxy
+curl -v http://localhost:8080/
+curl -v -X POST http://localhost:8080/hello -d 'hi'
+```
+
+You should see logs like:
+
+```
+http request method=GET path=/ -> status=200 bytes=... latency=...
+```
+
 ## Project Structure
 
 ```
@@ -84,11 +106,14 @@ charon/
 ├── internal/
 │   ├── config/          # Configuration handling
 │   ├── proxy/           # Proxy implementation
+│   │   ├── tcp.go       # Phase 1: TCP transparent proxy
+│   │   └── http.go      # Phase 2: HTTP reverse proxy with basic metrics
 │   └── ...
 ├── test/                # Test utilities and mock servers
 │   ├── cmd/             # Standalone test binaries (no conflict with library)
 │   │   ├── echo_server/
 │   │   ├── smoke_client/
+│   │   └── http_backend/
 │   │   └── interactive_client/
 │   ├── echo_server.go   # Library: RunEchoServer
 │   ├── smoke_client.go  # Library: RunSmokeClient
