@@ -106,6 +106,7 @@ jobs:
         GOOS: ${{ steps.vars.outputs.os }}
         GOARCH: ${{ matrix.arch }}
         CGO_ENABLED: 0
+      shell: bash
       run: |
         go build -ldflags="-w -s -X main.version=${{ github.ref_name }} -X main.commit=${{ github.sha }}" \
           -o charon-${{ steps.vars.outputs.os }}-${{ matrix.arch }}${{ steps.vars.outputs.ext }} \
