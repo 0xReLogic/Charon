@@ -1,19 +1,26 @@
 # Charon
 
-🔱 A lightweight, high-performance service mesh sidecar proxy built with Go, designed for transparently securing and observing microservice traffic.
+A lightweight, high-performance service mesh sidecar proxy built with Go, designed for transparently securing and observing microservice traffic.
 
 ## Overview
 
 Charon acts as a "bodyguard" for your microservices, intercepting all incoming and outgoing traffic, verifying identities, logging activities, and ensuring messages reach their correct destination, even if the destination moves.
 
-## Features (Planned)
+## Features
 
+### Implemented
 - **Transparent TCP Proxy**: Forward TCP traffic without application awareness
-- **Intelligent HTTP Proxy**: Parse and understand HTTP traffic
-- **Service Discovery**: Dynamically discover and connect to services
-- **Secure Communication**: Automatic mTLS between services
-- **Observability**: Distributed tracing and metrics collection
-- **Resilience**: Circuit breaking, rate limiting, and retries
+- **Intelligent HTTP Proxy**: Parse and understand HTTP traffic with metrics
+- **Service Discovery**: File-based registry with dynamic routing and cache/watcher
+- **Advanced Routing**: Host/path-based routing with multi-upstream support
+- **Health Checks**: Active TCP probes and passive health monitoring
+- **Circuit Breaking**: Per-upstream circuit breaker with configurable thresholds and timeouts
+- **Rate Limiting**: Token bucket algorithm with configurable RPS and burst limits
+- **Retry Logic**: Exponential backoff for idempotent requests
+- **Structured Logging**: Zap logger with trace context and structured fields
+- **Distributed Tracing**: OpenTelemetry integration with Jaeger exporter
+- **Secure Communication**: Automatic mTLS with certificate generation and management
+- **Prometheus Metrics**: Request metrics, latencies, health status, CB transitions, and rate limiting
 
 ## Getting Started
 
@@ -39,11 +46,43 @@ Create a `config.yaml` file:
 
 ```yaml
 listen_port: "8080"
-# Phase 3: service discovery via file registry
-target_service_name: "http-backend"
+target_service_name: "my-backend"
 registry_file: "registry.yaml"
-# (Optional fallback for Phase 1/2)
-# target_service_addr: "localhost:9091"
+
+routes:
+  - host: "api.example.com"
+    path_prefix: "/v1"
+    service: "api-service"
+  - path_prefix: "/users"
+    service: "user-service"
+
+# Circuit breaker settings
+circuit_breaker:
+  failure_threshold: 5
+  open_duration: "30s"
+
+# Rate limiting settings  
+rate_limit:
+  requests_per_second: 100
+  burst_size: 200
+  routes: []  # empty = all routes
+
+logging:
+  level: "info"
+  format: "json"
+  environment: "production"
+
+tracing:
+  enabled: false
+  jaeger_endpoint: "http://localhost:14268/api/traces"
+  service_name: "charon-proxy"
+
+# TLS/mTLS Configuration
+tls:
+  enabled: false
+  cert_dir: "./certs"
+  server_port: "8443"
+  upstream_tls: false
 ```
 
 ### Running
@@ -156,8 +195,48 @@ Available metrics include:
 - `charon_http_requests_total{method,status,upstream}`
 - `charon_http_request_latency_seconds_bucket{method,upstream,...}` (+ sum/count)
 - `charon_http_retries_total{method}`
+- `charon_http_rate_limited_total{route}` (counter)
+- `charon_upstream_health{service,upstream}` (gauge 1=UP, 0=DOWN)
+- `charon_circuit_breaker_transitions_total{upstream,to_state}` (counter)
 
 You can configure Prometheus to scrape `http://<charon-host>:8080/metrics`.
+
+### Circuit Breaker & Health Checks
+
+Charon performs active health checks (TCP probe every 5s) and per-upstream circuit breaking.
+
+- Circuit breaker: configurable failure threshold and open duration (defaults: 3 failures, 20s).
+- Rate limiting: token bucket algorithm with configurable RPS and burst size.
+- Metrics:
+  - `charon_upstream_health{service,upstream}`: current health.
+  - `charon_circuit_breaker_transitions_total{upstream,to_state}`: transitions (open/half_open/closed).
+  - `charon_http_rate_limited_total{route}`: rate limited requests per route.
+
+Test the circuit breaker locally:
+
+```yaml
+# registry.yaml (temporary for deterministic testing)
+services:
+  http-backend: localhost:9091
+```
+
+```bash
+# Terminal A: backend with failing endpoint
+go run ./test/cmd/http_backend --addr :9091   # /fail returns 500
+
+# Terminal B: start Charon
+./charon.exe --config config.yaml
+
+# Terminal C (PowerShell): trip breaker with 500s
+1..10 | % { curl.exe -s http://localhost:8080/fail > $null }
+
+# Check transitions metric
+curl -s http://localhost:8080/metrics | findstr charon_circuit_breaker_transitions_total
+
+# Wait ~21s (half-open), then send a success to close
+Start-Sleep -Seconds 21; curl.exe -s http://localhost:8080/hello > $null
+curl -s http://localhost:8080/metrics | findstr charon_circuit_breaker_transitions_total
+```
 
 ### Advanced Routing (Host/Path)
 

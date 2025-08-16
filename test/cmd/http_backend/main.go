@@ -12,6 +12,13 @@ func main() {
 	addr := flag.String("addr", ":9091", "HTTP backend listen address")
 	flag.Parse()
 
+	// Failing endpoint to help test circuit breaker: always returns 500
+	http.HandleFunc("/fail", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = fmt.Fprintf(w, "fail\n")
+	})
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		defer r.Body.Close()

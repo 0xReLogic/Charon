@@ -30,3 +30,6 @@ Thumbs.db
 
 # Local notes
 /todo.txt
+
+# Deployment guides (sensitive info)
+DEPLOYMENT.md

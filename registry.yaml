@@ -1,3 +1,6 @@
 services:
-  http-backend: localhost:9091
-  admin-backend: localhost:9092
+  http-backend:
+    - "localhost:9091"
+    - "localhost:9093"
+  admin-backend:
+    - "localhost:9092"

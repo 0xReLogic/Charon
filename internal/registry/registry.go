@@ -20,7 +20,7 @@ var (
 
 type cachedRegistry struct {
 	modTime  time.Time
-	services map[string]string
+	services map[string][]string
 }
 
 // ensureWatcher starts a file watcher for the given registry path (idempotent).
@@ -66,7 +66,7 @@ func ensureWatcher(registryPath string) {
 	}()
 }
 
-func loadRegistry(registryPath string) (map[string]string, error) {
+func loadRegistry(registryPath string) (map[string][]string, error) {
 	fi, err := os.Stat(registryPath)
 	if err != nil {
 		return nil, fmt.Errorf("stat registry: %w", err)
@@ -86,30 +86,69 @@ func loadRegistry(registryPath string) (map[string]string, error) {
 	if err := v.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("read registry: %w", err)
 	}
-	m := v.GetStringMapString("services")
+	// Support both string and list of strings for each service entry
+	raw := v.Get("services")
+	out := map[string][]string{}
+	if raw != nil {
+		if mp, ok := raw.(map[string]interface{}); ok {
+			for k, val := range mp {
+				switch vv := val.(type) {
+				case string:
+					if s := strings.TrimSpace(vv); s != "" {
+						out[k] = []string{s}
+					}
+				case []interface{}:
+					var list []string
+					for _, it := range vv {
+						if s, ok := it.(string); ok && strings.TrimSpace(s) != "" {
+							list = append(list, s)
+						}
+					}
+					if len(list) > 0 {
+						out[k] = list
+					}
+				case []string:
+					if len(vv) > 0 {
+						out[k] = vv
+					}
+				}
+			}
+		}
+	}
 
 	mu.Lock()
-	cache[registryPath] = &cachedRegistry{modTime: fi.ModTime(), services: m}
+	cache[registryPath] = &cachedRegistry{modTime: fi.ModTime(), services: out}
 	mu.Unlock()
 
 	// Start a file watcher (best-effort) to invalidate cache on change
 	ensureWatcher(registryPath)
 
-	return m, nil
+	return out, nil
 }
 
 // ResolveServiceAddress reads a YAML registry file and returns the address for a given service name.
 // Expected format:
 // services:
 //   service-name: host:port
-func ResolveServiceAddress(registryPath, serviceName string) (string, error) {
+// ResolveServiceAddresses returns a list of addresses for a given service name.
+// Each address is in host:port form.
+func ResolveServiceAddresses(registryPath, serviceName string) ([]string, error) {
 	m, err := loadRegistry(registryPath)
+	if err != nil {
+		return nil, err
+	}
+	addrs, ok := m[serviceName]
+	if !ok || len(addrs) == 0 {
+		return nil, fmt.Errorf("service %q not found in registry", serviceName)
+	}
+	return addrs, nil
+}
+
+// ResolveServiceAddress returns the first address for backward compatibility.
+func ResolveServiceAddress(registryPath, serviceName string) (string, error) {
+	addrs, err := ResolveServiceAddresses(registryPath, serviceName)
 	if err != nil {
 		return "", err
 	}
-	addr, ok := m[serviceName]
-	if !ok || strings.TrimSpace(addr) == "" {
-		return "", fmt.Errorf("service %q not found in registry", serviceName)
-	}
-	return addr, nil
+	return addrs[0], nil
 }

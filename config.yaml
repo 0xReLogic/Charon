@@ -5,3 +5,29 @@ registry_file: "registry.yaml"
 routes:
   - path_prefix: "/admin"
     service: "admin-backend"
+
+circuit_breaker:
+  failure_threshold: 3
+  open_duration: "20s"
+
+rate_limit:
+  requests_per_second: 100
+  burst_size: 20
+  routes: []  # empty = all routes
+
+logging:
+  level: "info"
+  format: "json"
+  environment: "production"
+
+tracing:
+  enabled: false
+  jaeger_endpoint: "http://localhost:14268/api/traces"
+  service_name: "charon-proxy"
+
+# TLS/mTLS Configuration
+tls:
+  enabled: false
+  cert_dir: "./certs"
+  server_port: "8443"
+  upstream_tls: false
