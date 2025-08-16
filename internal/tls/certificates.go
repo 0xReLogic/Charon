@@ -140,7 +140,7 @@ func (cm *CertManager) generateCA(keyPath, certPath string) error {
 	}
 
 	// Save CA key
-	keyOut, err := os.Create(keyPath)
+	keyOut, err := os.OpenFile(keyPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
@@ -155,7 +155,7 @@ func (cm *CertManager) generateCA(keyPath, certPath string) error {
 	}
 
 	// Save CA cert
-	certOut, err := os.Create(certPath)
+	certOut, err := os.OpenFile(certPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
 	}
@@ -223,7 +223,7 @@ func (cm *CertManager) generateServerCert(keyPath, certPath string) error {
 	}
 
 	// Save server key
-	keyOut, err := os.Create(keyPath)
+	keyOut, err := os.OpenFile(keyPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
@@ -238,7 +238,7 @@ func (cm *CertManager) generateServerCert(keyPath, certPath string) error {
 	}
 
 	// Save server cert
-	certOut, err := os.Create(certPath)
+	certOut, err := os.OpenFile(certPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
 	}
@@ -306,7 +306,7 @@ func (cm *CertManager) generateClientCert(keyPath, certPath string) error {
 	}
 
 	// Save client key
-	keyOut, err := os.Create(keyPath)
+	keyOut, err := os.OpenFile(keyPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
@@ -321,7 +321,7 @@ func (cm *CertManager) generateClientCert(keyPath, certPath string) error {
 	}
 
 	// Save client cert
-	certOut, err := os.Create(certPath)
+	certOut, err := os.OpenFile(certPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
 	}
