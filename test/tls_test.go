@@ -3,7 +3,6 @@ package test
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/0xReLogic/Charon/testutil"
 	"io"
 	"net/http"
 	"os"
