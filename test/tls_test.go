@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"testing"
@@ -73,7 +74,9 @@ func TestMTLSConnection(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("mTLS test successful"))
+		if _, err := w.Write([]byte("mTLS test successful")); err != nil {
+			log.Printf("handler write error: %v", err)
+		}
 	})
 
 	server := &http.Server{
@@ -92,7 +95,9 @@ func TestMTLSConnection(t *testing.T) {
 	serverAddr := listener.Addr().String()
 
 	go func() {
-		server.Serve(listener)
+		if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
+			log.Printf("server.Serve error: %v", err)
+		}
 	}()
 
 	// Give server time to start

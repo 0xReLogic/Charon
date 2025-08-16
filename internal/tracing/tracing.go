@@ -3,9 +3,11 @@ package tracing
 import (
 	"context"
 	"log"
+	"net/url"
+	"strings"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
@@ -15,10 +17,15 @@ import (
 
 const serviceName = "charon"
 
-// InitTracing initializes OpenTelemetry tracing with service name
+// InitTracing initializes OpenTelemetry tracing with service name using OTLP HTTP exporter.
 func InitTracing(serviceName, jaegerEndpoint string) (func(), error) {
-	// Create the Jaeger exporter
-	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(jaegerEndpoint)))
+	// Derive OTLP endpoint from provided Jaeger endpoint (fallback to localhost:4318)
+	endpoint := deriveOTLPEndpoint(jaegerEndpoint)
+	// Create the OTLP HTTP exporter
+	exp, err := otlptracehttp.New(context.Background(),
+		otlptracehttp.WithEndpoint(endpoint),
+		otlptracehttp.WithInsecure(),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -47,8 +54,13 @@ func InitTracing(serviceName, jaegerEndpoint string) (func(), error) {
 
 // Init initializes OpenTelemetry tracing
 func Init(jaegerEndpoint string) (func(), error) {
-	// Create the Jaeger exporter
-	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(jaegerEndpoint)))
+	// Derive OTLP endpoint from provided Jaeger endpoint (fallback to localhost:4318)
+	endpoint := deriveOTLPEndpoint(jaegerEndpoint)
+	// Create the OTLP HTTP exporter
+	exp, err := otlptracehttp.New(context.Background(),
+		otlptracehttp.WithEndpoint(endpoint),
+		otlptracehttp.WithInsecure(),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -97,4 +109,32 @@ func TraceIDFromContext(ctx context.Context) string {
 		return span.SpanContext().TraceID().String()
 	}
 	return ""
+}
+
+// deriveOTLPEndpoint attempts to map a Jaeger endpoint URL to an OTLP HTTP endpoint host:port.
+// If parsing fails, it defaults to "localhost:4318".
+func deriveOTLPEndpoint(jaegerEndpoint string) string {
+	if jaegerEndpoint == "" {
+		return "localhost:4318"
+	}
+	if u, err := url.Parse(jaegerEndpoint); err == nil {
+		hostname := u.Hostname()
+		port := u.Port()
+		// Map common Jaeger collector settings to OTLP default
+		if port == "14268" || strings.Contains(u.Path, "/api/traces") {
+			if hostname == "" {
+				hostname = "localhost"
+			}
+			return hostname + ":4318"
+		}
+		if hostname == "" {
+			return "localhost:4318"
+		}
+		if port == "" {
+			// default OTLP http port
+			return hostname + ":4318"
+		}
+		return hostname + ":" + port
+	}
+	return "localhost:4318"
 }

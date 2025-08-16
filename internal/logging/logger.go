@@ -197,10 +197,11 @@ func LogError(message string, fields map[string]interface{}) {
 }
 
 // Sync flushes any buffered log entries
-func Sync() {
+func Sync() error {
 	if logger != nil {
-		logger.Sync()
+		return logger.Sync()
 	}
+	return nil
 }
 
 // GenerateTraceID generates a simple trace ID

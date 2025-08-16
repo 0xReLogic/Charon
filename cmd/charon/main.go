@@ -285,7 +285,7 @@ func main() {
 	if err := logging.Init(logLevel); err != nil {
 		log.Fatalf("Failed to initialize logging: %v", err)
 	}
-	defer logging.Sync()
+	defer func() { _ = logging.Sync() }()
 
 	// Set environment for logger
 	if cfg.Logging.Environment != "" {
@@ -428,12 +428,18 @@ func main() {
 			logging.LogInfo("Upstream error", map[string]interface{}{
 				"host": host,
 			})
+			if host != "" {
+				bal.markFailure(host)
+			}
 		},
 		OnUpstreamSuccess: func(host string) {
 			// Log upstream success for monitoring
 			logging.LogInfo("Upstream success", map[string]interface{}{
 				"host": host,
 			})
+			if host != "" {
+				bal.markSuccess(host)
+			}
 		},
 		RateLimiter:    rateLimiter,
 		UseUpstreamTLS: cfg.TLS.UpstreamTLS,

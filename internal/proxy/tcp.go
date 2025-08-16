@@ -67,7 +67,9 @@ func (p *TCPProxy) handleConnection(clientConn net.Conn) {
 		}
 		// Tutup koneksi write ke target untuk memberi sinyal EOF
 		if conn, ok := targetConn.(*net.TCPConn); ok {
-			conn.CloseWrite()
+			if err := conn.CloseWrite(); err != nil {
+				log.Printf("Error CloseWrite target: %v", err)
+			}
 		}
 	}()
 
@@ -79,7 +81,9 @@ func (p *TCPProxy) handleConnection(clientConn net.Conn) {
 		}
 		// Tutup koneksi write ke client untuk memberi sinyal EOF
 		if conn, ok := clientConn.(*net.TCPConn); ok {
-			conn.CloseWrite()
+			if err := conn.CloseWrite(); err != nil {
+				log.Printf("Error CloseWrite client: %v", err)
+			}
 		}
 	}()
 
