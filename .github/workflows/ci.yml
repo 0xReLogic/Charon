@@ -33,6 +33,9 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
     
+    - name: Set Go proxy
+      run: go env -w GOPROXY=https://proxy.golang.org,direct
+
     - name: Download dependencies
       run: go mod download
     
@@ -95,6 +98,9 @@ jobs:
         fi
       shell: bash
     
+    - name: Set Go proxy
+      run: go env -w GOPROXY=https://proxy.golang.org,direct
+
     - name: Build binary
       env:
         GOOS: ${{ steps.vars.outputs.os }}
@@ -123,7 +129,7 @@ jobs:
         go-version: '1.21'
     
     - name: Run Gosec Security Scanner
-      uses: securego/gosec@v2
+      uses: securego/gosec@v2.20.0
       continue-on-error: true
       with:
         args: '-fmt sarif -out gosec.sarif -exclude-dir=test -no-fail ./...'
