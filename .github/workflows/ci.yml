@@ -12,6 +12,7 @@ permissions:
   actions: read
   contents: read
   security-events: write
+  packages: write
 
 jobs:
   test:
