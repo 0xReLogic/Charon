@@ -1,5 +1,13 @@
 # Charon
 
+[![CI/CD Pipeline](https://github.com/0xReLogic/Charon/actions/workflows/ci.yml/badge.svg)](https://github.com/0xReLogic/Charon/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/0xReLogic/Charon)](https://goreportcard.com/report/github.com/0xReLogic/Charon)
+[![codecov](https://codecov.io/gh/0xReLogic/Charon/branch/main/graph/badge.svg)](https://codecov.io/gh/0xReLogic/Charon)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/0xReLogic/Charon)](https://golang.org/)
+[![Release](https://img.shields.io/github/v/release/0xReLogic/Charon)](https://github.com/0xReLogic/Charon/releases)
+[![Docker Pulls](https://img.shields.io/docker/pulls/0xrelogic/charon)](https://hub.docker.com/r/0xrelogic/charon)
+
 A lightweight, high-performance service mesh sidecar proxy built with Go, designed for transparently securing and observing microservice traffic.
 
 ## Overview
@@ -293,19 +301,42 @@ charon/
 │   ├── registry/        # Phase 3: file-based service discovery
 │   └── ...
 ├── test/                # Test utilities and mock servers
-│   ├── cmd/             # Standalone test binaries (no conflict with library)
-│   │   ├── echo_server/
-│   │   ├── smoke_client/
-│   │   └── http_backend/
-│   │   └── interactive_client/
-│   ├── echo_server.go   # Library: RunEchoServer
-│   ├── smoke_client.go  # Library: RunSmokeClient
-│   └── test_proxy.go    # Library: RunInteractiveProxyClient
-├── config.yaml          # Default configuration (Phase 3 by default)
-├── registry.yaml        # Sample service registry (Phase 3)
-└── README.md            # This file
+│   ├── cmd/             # Standalone test binaries
+│   │   ├── echo_server/ # TCP echo server for testing
+│   │   ├── http_backend/ # HTTP backend server
+│   │   └── interactive_client/ # Interactive test client
+│   ├── simple_backend.go # Simple HTTP backend for testing
+│   ├── echo_server.go   # TCP echo server implementation
+│   ├── smoke_client.go  # Smoke test client
+│   ├── tls_test.go      # TLS functionality tests
+│   └── test_proxy.go    # Interactive proxy test client
+├── .github/
+│   └── workflows/
+│       └── ci.yml       # CI/CD pipeline (Linux, Windows, macOS)
+├── config.yaml          # Production-ready configuration
+├── registry.yaml        # Service registry with load balancing
+├── Dockerfile           # Multi-stage Docker build
+└── README.md            # This documentation
 ```
+
+## Author
+
+**Allen Elzayn** - *Lead Developer* - [0xReLogic](https://github.com/0xReLogic)
+
+## Contributing
+
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Built with ❤️ by Allen Elzayn
+- Inspired by modern service mesh architectures
+- Thanks to the Go community for excellent libraries
