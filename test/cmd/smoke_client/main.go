@@ -3,9 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	testutil "github.com/0xReLogic/Charon/test"
 	"log"
 	"time"
+	
+	"github.com/0xReLogic/Charon/testutil"
 )
 
 func main() {
