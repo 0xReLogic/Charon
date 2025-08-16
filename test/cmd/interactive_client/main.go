@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"log"
 	testutil "github.com/0xReLogic/Charon/test"
+	"log"
 )
 
 func main() {

@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-// TCPProxy adalah implementasi proxy TCP sederhana
+// TCPProxy implements a simple TCP proxy
 type TCPProxy struct {
 	ListenAddr string
 	TargetAddr string

@@ -40,8 +40,8 @@ type HTTPProxy struct {
 	// Rate limiter
 	RateLimiter *ratelimit.RateLimiter
 	// TLS configuration
-	TLSConfig   *tls.Config
-	ClientTLS   *tls.Config
+	TLSConfig      *tls.Config
+	ClientTLS      *tls.Config
 	UseUpstreamTLS bool
 }
 
@@ -314,7 +314,7 @@ func (p *HTTPProxy) Start() error {
 		httpRequestsTotal.WithLabelValues(r.Method, strconv.Itoa(rec.status), resolvedUp).Inc()
 		httpRequestLatency.WithLabelValues(r.Method, resolvedUp).Observe(latency.Seconds())
 	})
-	
+
 	mux.Handle("/metrics", promhttp.Handler())
 
 	server := &http.Server{
@@ -329,7 +329,7 @@ func (p *HTTPProxy) Start() error {
 		server.TLSConfig = p.TLSConfig
 		logging.LogInfo("Starting HTTPS server with mTLS", map[string]interface{}{
 			"address": p.ListenAddr,
-			"tls": true,
+			"tls":     true,
 		})
 		return server.ListenAndServeTLS("", "") // certificates in TLSConfig
 	}

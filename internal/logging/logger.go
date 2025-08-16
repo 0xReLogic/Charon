@@ -20,7 +20,7 @@ func Init(level string) error {
 	config := zap.NewProductionConfig()
 	config.OutputPaths = []string{"stdout"}
 	config.ErrorOutputPaths = []string{"stderr"}
-	
+
 	// Set log level
 	switch level {
 	case "debug":
@@ -34,7 +34,7 @@ func Init(level string) error {
 	default:
 		config.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
 	}
-	
+
 	// Development mode for better readability during development
 	if os.Getenv("CHARON_ENV") == "development" {
 		config.Development = true
@@ -53,13 +53,13 @@ func Init(level string) error {
 			EncodeCaller:   zapcore.ShortCallerEncoder,
 		}
 	}
-	
+
 	var err error
 	logger, err = config.Build()
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -95,11 +95,11 @@ func LogHTTPRequest(ctx context.Context, method, path, upstream, status string, 
 		zap.Int64("latency_ms", latency),
 		zap.Int64("size_bytes", size),
 	}
-	
+
 	if traceID := GetTraceID(ctx); traceID != "" {
 		fields = append(fields, zap.String("trace_id", traceID))
 	}
-	
+
 	GetLogger().Info("http_request", fields...)
 }
 
@@ -109,11 +109,11 @@ func LogUpstreamError(ctx context.Context, upstream string, err error) {
 		zap.String("upstream", upstream),
 		zap.Error(err),
 	}
-	
+
 	if traceID := GetTraceID(ctx); traceID != "" {
 		fields = append(fields, zap.String("trace_id", traceID))
 	}
-	
+
 	GetLogger().Error("upstream_error", fields...)
 }
 
@@ -141,11 +141,11 @@ func LogRateLimited(ctx context.Context, route string) {
 		zap.String("route", route),
 		zap.String("event", "rate_limited"),
 	}
-	
+
 	if traceID := GetTraceID(ctx); traceID != "" {
 		fields = append(fields, zap.String("trace_id", traceID))
 	}
-	
+
 	GetLogger().Warn("rate_limited", fields...)
 }
 

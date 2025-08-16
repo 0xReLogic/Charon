@@ -31,7 +31,7 @@ func NewCertManager(certDir string) (*CertManager, error) {
 	}
 
 	cm := &CertManager{certDir: certDir}
-	
+
 	// Load or generate CA
 	if err := cm.setupCA(); err != nil {
 		return nil, fmt.Errorf("failed to setup CA: %w", err)
@@ -145,7 +145,7 @@ func (cm *CertManager) generateCA(keyPath, certPath string) error {
 		return err
 	}
 	defer keyOut.Close()
-	
+
 	keyPEM := &pem.Block{
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(caKey),
@@ -228,7 +228,7 @@ func (cm *CertManager) generateServerCert(keyPath, certPath string) error {
 		return err
 	}
 	defer keyOut.Close()
-	
+
 	keyPEM := &pem.Block{
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(serverKey),
@@ -311,7 +311,7 @@ func (cm *CertManager) generateClientCert(keyPath, certPath string) error {
 		return err
 	}
 	defer keyOut.Close()
-	
+
 	keyPEM := &pem.Block{
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(clientKey),

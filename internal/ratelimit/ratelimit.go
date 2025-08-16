@@ -7,9 +7,9 @@ import (
 
 // TokenBucket implements token bucket rate limiting
 type TokenBucket struct {
-	capacity   int           // maximum tokens
-	tokens     int           // current tokens
-	refillRate int           // tokens per second
+	capacity   int // maximum tokens
+	tokens     int // current tokens
+	refillRate int // tokens per second
 	lastRefill time.Time
 	mu         sync.Mutex
 }
@@ -31,7 +31,7 @@ func (tb *TokenBucket) Allow() bool {
 
 	now := time.Now()
 	elapsed := now.Sub(tb.lastRefill)
-	
+
 	// Refill tokens based on elapsed time
 	if elapsed > 0 {
 		tokensToAdd := int(elapsed.Seconds() * float64(tb.refillRate))
@@ -54,7 +54,7 @@ func (tb *TokenBucket) Allow() bool {
 type RateLimiter struct {
 	buckets map[string]*TokenBucket
 	mu      sync.RWMutex
-	
+
 	// Default settings
 	defaultRPS   int
 	defaultBurst int

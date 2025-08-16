@@ -55,7 +55,7 @@ type rrBalancer struct {
 }
 
 type cbState struct {
-	state        int       // 0=closed,1=open,2=half-open
+	state        int // 0=closed,1=open,2=half-open
 	failures     int
 	openUntil    time.Time
 	trialAllowed bool
@@ -302,7 +302,7 @@ func main() {
 		} else {
 			defer shutdown()
 			logging.LogInfo("Tracing initialized", map[string]interface{}{
-				"service": cfg.Tracing.ServiceName,
+				"service":  cfg.Tracing.ServiceName,
 				"endpoint": cfg.Tracing.JaegerEndpoint,
 			})
 		}
@@ -315,7 +315,7 @@ func main() {
 		certManager, err = tlsutils.NewCertManager(cfg.TLS.CertDir)
 		if err != nil {
 			logging.LogError("Failed to initialize certificate manager", map[string]interface{}{
-				"error": err.Error(),
+				"error":    err.Error(),
 				"cert_dir": cfg.TLS.CertDir,
 			})
 			return
@@ -408,8 +408,8 @@ func main() {
 	if cfg.RateLimit.RequestsPerSecond > 0 {
 		rateLimiter = ratelimit.NewRateLimiter(cfg.RateLimit.RequestsPerSecond, cfg.RateLimit.BurstSize)
 		logging.LogInfo("Rate limiting initialized", map[string]interface{}{
-			"rps": cfg.RateLimit.RequestsPerSecond,
-			"burst": cfg.RateLimit.BurstSize,
+			"rps":    cfg.RateLimit.RequestsPerSecond,
+			"burst":  cfg.RateLimit.BurstSize,
 			"routes": len(cfg.RateLimit.Routes),
 		})
 	}
@@ -421,9 +421,9 @@ func main() {
 	}
 
 	httpProxy := &proxy.HTTPProxy{
-		ListenAddr:        listenAddr,
-		Resolver:          resolver,
-		OnUpstreamError:   func(host string) {
+		ListenAddr: listenAddr,
+		Resolver:   resolver,
+		OnUpstreamError: func(host string) {
 			// Log upstream error for monitoring
 			logging.LogInfo("Upstream error", map[string]interface{}{
 				"host": host,
@@ -435,18 +435,18 @@ func main() {
 				"host": host,
 			})
 		},
-		RateLimiter:       rateLimiter,
-		UseUpstreamTLS:    cfg.TLS.UpstreamTLS,
+		RateLimiter:    rateLimiter,
+		UseUpstreamTLS: cfg.TLS.UpstreamTLS,
 	}
 
 	// Configure TLS if enabled
 	if cfg.TLS.Enabled && certManager != nil {
 		httpProxy.TLSConfig = certManager.GetServerTLSConfig()
 		httpProxy.ClientTLS = certManager.GetClientTLSConfig()
-		
+
 		logging.LogInfo("TLS configuration applied to proxy", map[string]interface{}{
-			"server_tls": true,
-			"client_tls": cfg.TLS.UpstreamTLS,
+			"server_tls":  true,
+			"client_tls":  cfg.TLS.UpstreamTLS,
 			"listen_addr": listenAddr,
 		})
 	}

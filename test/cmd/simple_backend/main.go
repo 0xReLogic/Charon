@@ -18,24 +18,24 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	
+
 	// Health check endpoint
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintf(w, `{"status":"healthy","port":"%s"}`, port)
 	})
-	
+
 	// Root endpoint
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, `{"message":"Hello from backend server","port":"%s","path":"%s","method":"%s"}`, 
+		fmt.Fprintf(w, `{"message":"Hello from backend server","port":"%s","path":"%s","method":"%s"}`,
 			port, r.URL.Path, r.Method)
 	})
-	
+
 	// API endpoint
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"service":"backend-%s","endpoint":"%s","timestamp":"%s"}`, 
+		fmt.Fprintf(w, `{"service":"backend-%s","endpoint":"%s","timestamp":"%s"}`,
 			port, r.URL.Path, "2025-08-16T18:08:50Z")
 	})
 
@@ -52,7 +52,7 @@ func main() {
 	go func() {
 		fmt.Printf("Starting backend server on http://localhost%s\n", addr)
 		fmt.Printf("Health check: http://localhost%s/health\n", addr)
-		
+
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server failed: %v", err)
 		}

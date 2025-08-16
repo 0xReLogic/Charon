@@ -8,24 +8,24 @@ import (
 
 // Config menyimpan konfigurasi aplikasi
 type Config struct {
-	ListenPort        string `mapstructure:"listen_port"`
+	ListenPort string `mapstructure:"listen_port"`
 	// Phase 3: gunakan nama service dan registry
 	TargetServiceName string `mapstructure:"target_service_name"`
 	RegistryFile      string `mapstructure:"registry_file"`
 	// Backward compatibility (Phase 1/2)
 	TargetServiceAddr string `mapstructure:"target_service_addr"`
 	// Advanced routing rules (optional). Evaluated in order; first match wins.
-	Routes            []RouteRule `mapstructure:"routes"`
+	Routes []RouteRule `mapstructure:"routes"`
 	// Circuit breaker configuration
-	CircuitBreaker    CircuitBreakerConfig `mapstructure:"circuit_breaker"`
+	CircuitBreaker CircuitBreakerConfig `mapstructure:"circuit_breaker"`
 	// Rate limiting configuration
-	RateLimit         RateLimitConfig `mapstructure:"rate_limit"`
+	RateLimit RateLimitConfig `mapstructure:"rate_limit"`
 	// Logging configuration
-	Logging           LoggingConfig `mapstructure:"logging"`
+	Logging LoggingConfig `mapstructure:"logging"`
 	// Tracing configuration
-	Tracing           TracingConfig `mapstructure:"tracing"`
+	Tracing TracingConfig `mapstructure:"tracing"`
 	// TLS configuration
-	TLS               TLSConfig `mapstructure:"tls"`
+	TLS TLSConfig `mapstructure:"tls"`
 }
 
 // RouteRule mendefinisikan aturan routing berbasis host/path
@@ -57,9 +57,9 @@ type LoggingConfig struct {
 
 // TracingConfig mendefinisikan konfigurasi tracing
 type TracingConfig struct {
-	Enabled         bool   `mapstructure:"enabled"`          // enable tracing (default: false)
-	JaegerEndpoint  string `mapstructure:"jaeger_endpoint"`  // Jaeger collector endpoint
-	ServiceName     string `mapstructure:"service_name"`     // service name for tracing
+	Enabled        bool   `mapstructure:"enabled"`         // enable tracing (default: false)
+	JaegerEndpoint string `mapstructure:"jaeger_endpoint"` // Jaeger collector endpoint
+	ServiceName    string `mapstructure:"service_name"`    // service name for tracing
 }
 
 // TLSConfig mendefinisikan konfigurasi TLS/mTLS

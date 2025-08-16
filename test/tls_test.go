@@ -15,7 +15,7 @@ import (
 func TestTLSCertificateGeneration(t *testing.T) {
 	// Create temporary directory for certificates
 	tempDir := t.TempDir()
-	
+
 	// Initialize certificate manager
 	certManager, err := tlsutils.NewCertManager(tempDir)
 	if err != nil {
@@ -27,7 +27,7 @@ func TestTLSCertificateGeneration(t *testing.T) {
 	if serverConfig == nil {
 		t.Fatal("Server TLS config is nil")
 	}
-	
+
 	if len(serverConfig.Certificates) == 0 {
 		t.Fatal("No server certificates configured")
 	}
@@ -37,7 +37,7 @@ func TestTLSCertificateGeneration(t *testing.T) {
 	if clientConfig == nil {
 		t.Fatal("Client TLS config is nil")
 	}
-	
+
 	if len(clientConfig.Certificates) == 0 {
 		t.Fatal("No client certificates configured")
 	}
@@ -60,7 +60,7 @@ func TestMTLSConnection(t *testing.T) {
 
 	// Create temporary directory for certificates
 	tempDir := t.TempDir()
-	
+
 	// Initialize certificate manager
 	certManager, err := tlsutils.NewCertManager(tempDir)
 	if err != nil {
@@ -69,7 +69,7 @@ func TestMTLSConnection(t *testing.T) {
 
 	// Set up test HTTPS server
 	serverConfig := certManager.GetServerTLSConfig()
-	
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -90,7 +90,7 @@ func TestMTLSConnection(t *testing.T) {
 	defer listener.Close()
 
 	serverAddr := listener.Addr().String()
-	
+
 	go func() {
 		server.Serve(listener)
 	}()
@@ -101,7 +101,7 @@ func TestMTLSConnection(t *testing.T) {
 	// Test client connection with mTLS
 	clientConfig := certManager.GetClientTLSConfig()
 	clientConfig.ServerName = "localhost" // Override for test
-	
+
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: clientConfig,
@@ -135,24 +135,24 @@ func TestMTLSConnection(t *testing.T) {
 
 func TestTLSConfigValidation(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	certManager, err := tlsutils.NewCertManager(tempDir)
 	if err != nil {
 		t.Fatalf("Failed to create cert manager: %v", err)
 	}
 
 	serverConfig := certManager.GetServerTLSConfig()
-	
+
 	// Verify TLS version
 	if serverConfig.MinVersion != tls.VersionTLS12 {
 		t.Errorf("Expected minimum TLS version 1.2, got %x", serverConfig.MinVersion)
 	}
-	
+
 	// Verify client authentication is required
 	if serverConfig.ClientAuth != tls.RequireAndVerifyClientCert {
 		t.Errorf("Expected RequireAndVerifyClientCert, got %v", serverConfig.ClientAuth)
 	}
-	
+
 	// Verify CA cert pool exists
 	if serverConfig.ClientCAs == nil {
 		t.Error("Client CA cert pool is nil")

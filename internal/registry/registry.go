@@ -129,7 +129,9 @@ func loadRegistry(registryPath string) (map[string][]string, error) {
 // ResolveServiceAddress reads a YAML registry file and returns the address for a given service name.
 // Expected format:
 // services:
-//   service-name: host:port
+//
+//	service-name: host:port
+//
 // ResolveServiceAddresses returns a list of addresses for a given service name.
 // Each address is in host:port form.
 func ResolveServiceAddresses(registryPath, serviceName string) ([]string, error) {
